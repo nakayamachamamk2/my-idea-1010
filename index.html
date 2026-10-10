@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; base-uri 'none'; form-action 'none'">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hobby Meter</title>
+<style>
+:root{--bg:#faf5ff;--card:#fff;--p1:#a855f7;--p2:#9333ea;--p3:#7e22ce;--ink:#3b0764;--sub:#6b4a85;--soft:#e9d5ff;--gold:#fde68a;--line:#eadcfa}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,"Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.5;min-height:100vh;padding-bottom:40px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;max-width:960px;margin:0 auto}
+.brand{font-weight:800;font-size:18px;color:var(--p3);display:flex;gap:8px;align-items:center}
+.lang{display:flex;background:#fff;border:1px solid var(--soft);border-radius:20px;padding:3px}
+.lang button{border:0;background:transparent;padding:5px 12px;border-radius:16px;font-size:13px;font-weight:700;color:var(--sub)}
+.lang button[aria-pressed=true]{background:var(--p2);color:#fff}
+.wrap{max-width:960px;margin:0 auto;padding:0 16px;display:grid;gap:16px}
+@media(min-width:860px){.wrap{grid-template-columns:1fr 1fr;align-items:start}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 4px 16px #7e22ce12}
+.card h2{margin:0 0 12px;font-size:16px;color:var(--p3)}
+.main{text-align:center}
+.kicker{font-size:14px;color:var(--sub)}
+.goalrow{display:flex;justify-content:center;align-items:center;gap:8px;margin:4px 0 18px}
+.goalrow b{font-size:22px;color:#581c87}
+.icon-btn{border:1px solid var(--soft);background:#fff;border-radius:50%;width:34px;height:34px;font-size:15px}
+.goal-edit{display:none;gap:8px;justify-content:center;margin:-6px 0 16px;flex-wrap:wrap}
+.goal-edit.open{display:flex}
+input[type=number],input[type=text]{border:2px solid var(--soft);border-radius:12px;padding:10px 12px;background:#fff;width:100%;min-width:0}
+.goal-edit input{width:150px}
+.meter{width:min(72vw,250px);aspect-ratio:1;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--p1) 0 0%,var(--soft) 0 100%);transition:box-shadow .4s}
+.meter.done{box-shadow:0 0 0 6px #fde68a,0 0 30px #f59e0b66}
+.meter .in{width:77%;aspect-ratio:1;border-radius:50%;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.pct{font-size:clamp(38px,12vw,52px);font-weight:800;color:var(--p3);line-height:1}
+.amt{font-size:15px;color:#6b5a7a;margin-top:4px}
+.left{margin:18px 0;font-weight:700;color:#581c87;min-height:26px}
+.add{background:var(--p2);color:#fff;border:0;border-radius:32px;padding:15px 34px;font-weight:800;font-size:18px;box-shadow:0 5px 14px #9333ea66;width:100%;max-width:320px;transition:transform .15s}
+.add:hover{transform:translateY(-2px)}
+.add:active{transform:scale(.97)}
+.pet{display:flex;align-items:center;gap:14px;background:var(--bg);border-radius:16px;padding:12px 14px;margin-top:20px;text-align:left}
+.pet .face{font-size:44px;line-height:1;animation:bob 2.4s ease-in-out infinite}
+.pet small{color:var(--sub);display:block}
+@keyframes bob{50%{transform:translateY(-5px)}}
+@media(prefers-reduced-motion:reduce){.pet .face{animation:none}*{transition:none!important}}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.badge{border-radius:16px;padding:10px 12px;background:var(--gold);font-size:13px;display:flex;gap:8px;align-items:center}
+.badge .e{font-size:24px}
+.badge.lock{background:#f1eaf7;color:#8b7c99}
+.badge.lock .e{filter:grayscale(1);opacity:.5}
+.badge b{display:block;font-size:13px}
+.badge span{font-size:11px}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.list li{display:flex;align-items:center;gap:10px;padding:10px;border-radius:14px;background:var(--bg)}
+.list .ic{font-size:24px}
+.list .tx{flex:1;min-width:0}
+.list .tx b{display:block;font-size:14px;overflow-wrap:anywhere}
+.list .tx small{color:var(--sub)}
+.list .v{font-weight:800;color:var(--p3);white-space:nowrap}
+.list .del{border:0;background:transparent;color:#9a86ad;font-size:16px;padding:6px 8px;border-radius:8px}
+.total{display:flex;justify-content:space-between;margin-bottom:10px;font-size:14px;color:var(--sub)}
+.link{background:none;border:0;color:var(--p2);text-decoration:underline;font-size:13px;margin-top:12px;padding:4px}
+.empty{text-align:center;color:var(--sub);padding:16px}
+.side{display:grid;gap:16px}
+/* sheet */
+.back{position:fixed;inset:0;background:#3b076488;display:none;align-items:flex-end;justify-content:center;z-index:20}
+.back.open{display:flex}
+@media(min-width:600px){.back{align-items:center}}
+.sheet{background:#fff;width:100%;max-width:440px;border-radius:26px 26px 0 0;padding:22px 20px 26px;animation:up .25s ease}
+@media(min-width:600px){.sheet{border-radius:26px}}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.sheet h2{margin:0 0 14px;color:var(--p3)}
+.lbl{font-size:13px;font-weight:700;color:var(--sub);margin:12px 0 6px;display:block}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:2px solid var(--soft);background:#fff;border-radius:20px;padding:7px 13px;font-size:14px}
+.chip[aria-pressed=true]{background:var(--p2);border-color:var(--p2);color:#fff}
+.err{color:#b91c1c;font-size:13px;min-height:20px;margin-top:6px}
+.acts{display:flex;gap:10px;margin-top:10px}
+.acts button{flex:1;padding:13px;border-radius:26px;font-weight:800;border:2px solid var(--soft);background:#fff}
+.acts .ok{background:var(--p2);border-color:var(--p2);color:#fff}
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,30px);background:#581c87;color:#fff;padding:12px 18px;border-radius:24px;opacity:0;pointer-events:none;transition:.3s;z-index:40;max-width:90vw;text-align:center;font-weight:700}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:30}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span aria-hidden="true">🎯</span><span data-i18n="brand"></span></div>
+  <div class="lang" data-demo="lang-switch" role="group" aria-label="Language">
+    <button type="button" id="l-ja" data-demo="lang-ja" aria-pressed="false">日本語</button>
+    <button type="button" id="l-en" data-demo="lang-en" aria-pressed="false">EN</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card main" aria-labelledby="mt">
+    <div class="kicker" id="mt" data-i18n="monthTitle"></div>
+    <div class="goalrow">
+      <b id="goalText" data-demo="goal-text"></b>
+      <button type="button" class="icon-btn" id="goalToggle" data-demo="goal-edit" data-i18n-aria="editGoal" aria-expanded="false">✏️</button>
+    </div>
+    <div class="goal-edit" id="goalEdit">
+      <input type="number" id="goalInput" data-demo="goal-input" min="100" step="100" data-i18n-aria="goalInput" inputmode="numeric">
+      <button type="button" class="chip" id="goalSave" data-demo="goal-save" data-i18n="setGoal"></button>
+    </div>
+    <div class="meter" id="meter" data-demo="meter" role="img">
+      <div class="in"><div class="pct" id="pct">0%</div><div class="amt" id="amt">¥0</div></div>
+    </div>
+    <div class="left" id="left" data-demo="remaining" aria-live="polite"></div>
+    <button type="button" class="add" id="addBtn" data-demo="add-income" data-i18n="addIncome"></button>
+    <div class="pet" data-demo="pet">
+      <div class="face" id="petFace" aria-hidden="true">🥚</div>
+      <div><b id="petName"></b><small id="petMsg"></small></div>
+    </div>
+  </section>
+
+  <div class="side">
+    <section class="card" aria-labelledby="bt">
+      <h2 id="bt" data-i18n="badgesTitle"></h2>
+      <div class="badges" id="badges" data-demo="badges"></div>
+    </section>
+    <section class="card" aria-labelledby="ht">
+      <h2 id="ht" data-i18n="historyTitle"></h2>
+      <div class="total"><span data-i18n="count"></span><b id="countNum"></b></div>
+      <ul class="list" id="list" data-demo="history"></ul>
+      <button type="button" class="link" id="resetBtn" data-demo="reset-sample" data-i18n="resetSample"></button>
+    </section>
+  </div>
+</main>
+
+<div class="back" id="back" data-demo="sheet-backdrop">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="st">
+    <h2 id="st" data-i18n="sheetTitle"></h2>
+    <span class="lbl" data-i18n="what"></span>
+    <div class="chips" id="cats"></div>
+    <label class="lbl" for="amtIn" data-i18n="howMuch"></label>
+    <input type="number" id="amtIn" data-demo="amount-input" min="1" step="1" inputmode="numeric" data-i18n-ph="amtPh">
+    <div class="chips" style="margin-top:8px">
+      <button type="button" class="chip" data-q="500" data-demo="quick-500">+¥500</button>
+      <button type="button" class="chip" data-q="1000" data-demo="quick-1000">+¥1,000</button>
+      <button type="button" class="chip" data-q="3000" data-demo="quick-3000">+¥3,000</button>
+    </div>
+    <label class="lbl" for="memoIn" data-i18n="memo"></label>
+    <input type="text" id="memoIn" data-demo="memo-input" maxlength="40" data-i18n-ph="memoPh">
+    <div class="err" id="err" role="alert"></div>
+    <div class="acts">
+      <button type="button" id="cancel" data-demo="cancel" data-i18n="cancel"></button>
+      <button type="button" class="ok" id="save" data-demo="save-income" data-i18n="save"></button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<script>
+const I18N={
+ja:{
+title:"ホビメーター",brand:"ホビメーター",monthTitle:"今月のチャレンジ",
+goalLabel:"目標 {v}",editGoal:"目標を変更",goalInput:"今月の目標金額",setGoal:"目標を決定",
+addIncome:"＋ 収入を追加",
+leftMsg:"あと {v}で達成！🔥",doneMsg:"目標達成！おめでとう🎉",overMsg:"目標を {v} 超えました！🎉",
+meterAria:"達成度 {p}%、{a}",
+badgesTitle:"バッジ",historyTitle:"今月の収入",count:"記録した件数",
+resetSample:"サンプルデータに戻す",empty:"まだ収入がありません。最初の1件を追加しよう！",
+sheetTitle:"収入を追加",what:"何の活動？",howMuch:"金額（円）",amtPh:"例：1500",memo:"メモ（任意）",memoPh:"例：ピアスが売れた",
+cancel:"キャンセル",save:"保存する",
+errAmt:"1円以上の金額を入力してください。",errGoal:"100円以上の目標を入力してください。",
+cat_hand:"ハンドメイド",cat_photo:"写真",cat_illust:"イラスト",cat_other:"その他",
+s1:"ハンドメイドのピアスをフリマで販売",s2:"写真素材サイトの売上",s3:"SNSアイコンのイラスト依頼",s4:"読み終えた本を売却",
+noMemo:"（メモなし）",del:"削除",delAria:"この記録を削除",
+added:"{v} を記録しました！",goalSet:"今月の目標を {v} にしました",reset:"サンプルデータに戻しました",deleted:"記録を削除しました",
+earned:"バッジ獲得：{n}",goalReached:"🎉 今月の目標を達成！",
+p0n:"たまご",p0m:"収入を記録すると孵化するよ",
+p1n:"ひよこ",p1m:"生まれた！この調子でコツコツ",
+p2n:"ぴよ太",p2m:"半分に近づいてる！すくすく成長中",
+p3n:"にわとり",p3m:"もうすぐゴール！あと少し！",
+p4n:"王冠チキン",p4m:"目標達成！最高の1か月👑",
+b_first:"初めての収入",b_firstD:"1件記録する",
+b_three:"コツコツ家",b_threeD:"3件記録する",
+b_half:"折り返し",b_halfD:"目標の50%に到達",
+b_big:"大きな一歩",b_bigD:"1回で3,000円以上",
+b_var:"マルチ活動",b_varD:"3種類の活動で稼ぐ",
+b_goal:"目標達成！",b_goalD:"月の目標に到達"
+},
+en:{
+title:"Hobby Meter",brand:"Hobby Meter",monthTitle:"This month's challenge",
+goalLabel:"Goal {v}",editGoal:"Edit goal",goalInput:"Goal amount for this month",setGoal:"Set goal",
+addIncome:"+ Add income",
+leftMsg:"{v} to go! 🔥",doneMsg:"Goal reached! Congrats 🎉",overMsg:"{v} over your goal! 🎉",
+meterAria:"Progress {p}%, {a}",
+badgesTitle:"Badges",historyTitle:"This month's income",count:"Entries",
+resetSample:"Reset to sample data",empty:"No income yet. Add your first one!",
+sheetTitle:"Add income",what:"What was it from?",howMuch:"Amount (yen)",amtPh:"e.g. 1500",memo:"Note (optional)",memoPh:"e.g. Sold earrings",
+cancel:"Cancel",save:"Save",
+errAmt:"Please enter an amount of 1 yen or more.",errGoal:"Please enter a goal of 100 yen or more.",
+cat_hand:"Handmade",cat_photo:"Photos",cat_illust:"Illustration",cat_other:"Other",
+s1:"Sold handmade earrings at a flea market",s2:"Stock photo site sales",s3:"Illustration commission for a social icon",s4:"Sold books I finished reading",
+noMemo:"(no note)",del:"Delete",delAria:"Delete this entry",
+added:"Added {v}!",goalSet:"Goal set to {v} for this month",reset:"Sample data restored",deleted:"Entry deleted",
+earned:"Badge earned: {n}",goalReached:"🎉 You hit this month's goal!",
+p0n:"Egg",p0m:"Add income and it will hatch",
+p1n:"Chick",p1m:"It hatched! Keep it up, step by step",
+p2n:"Pip",p2m:"Nearly halfway! Growing fast",
+p3n:"Hen",p3m:"Almost there! Just a bit more!",
+p4n:"Crown Chicken",p4m:"Goal reached! Best month ever 👑",
+b_first:"First income",b_firstD:"Log 1 entry",
+b_three:"Steady maker",b_threeD:"Log 3 entries",
+b_half:"Halfway",b_halfD:"Reach 50% of goal",
+b_big:"Big step",b_bigD:"¥3,000+ in one go",
+b_var:"Multi-hobbyist",b_varD:"Earn from 3 kinds of hobbies",
+b_goal:"Goal reached!",b_goalD:"Hit your monthly goal"
+}};
+const CATS=[{id:"hand",e:"🧶"},{id:"photo",e:"📷"},{id:"illust",e:"🎨"},{id:"other",e:"📦"}];
+const BADGES=[{id:"first",e:"🌱"},{id:"three",e:"🧵"},{id:"half",e:"🌗"},{id:"big",e:"💪"},{id:"var",e:"🌈"},{id:"goal",e:"🏆"}];
+const KEY="hobbymeter-v1";
+const $=id=>document.getElementById(id);
+let lang="en";
+(function(){
+  let l=null;
+  if(window.APP_LANG==="ja"||window.APP_LANG==="en")l=window.APP_LANG;
+  if(!l){try{const q=new URLSearchParams(location.search).get("lang");if(q==="ja"||q==="en")l=q}catch(e){}}
+  if(!l){try{const s=localStorage.getItem("lang");if(s==="ja"||s==="en")l=s}catch(e){}}
+  lang=l||"en";
+})();
+const t=(k,p)=>{let s=(I18N[lang][k]??k);if(p)for(const x in p)s=s.replace("{"+x+"}",p[x]);return s};
+const yen=n=>"¥"+Math.round(n).toLocaleString("en-US");
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const now=new Date(),MONTH=now.getFullYear()+"-"+(now.getMonth()+1);
+function sample(){
+  const d=now.getDate(),day=k=>Math.max(1,d-k);
+  return {month:MONTH,goal:10000,nid:5,badges:["first","three","var"],entries:[
+    {id:1,cat:"hand",amount:2800,mk:"s1",day:day(9)},
+    {id:2,cat:"photo",amount:1500,mk:"s2",day:day(6)},
+    {id:3,cat:"illust",amount:1600,mk:"s3",day:day(3)},
+    {id:4,cat:"other",amount:500,mk:"s4",day:day(1)}]};
+}
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){S=null}
+if(!S||!Array.isArray(S.entries))S=sample();
+if(S.month!==MONTH){S={month:MONTH,goal:S.goal||10000,nid:1,badges:[],entries:[]}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const total=()=>S.entries.reduce((a,e)=>a+e.amount,0);
+const pctOf=v=>S.goal?v/S.goal*100:0;
+
+function badgeState(){
+  const e=S.entries,tt=total();
+  return {first:e.length>=1,three:e.length>=3,half:pctOf(tt)>=50,big:e.some(x=>x.amount>=3000),
+    var:new Set(e.map(x=>x.cat)).size>=3,goal:tt>=S.goal};
+}
+
+/* meter */
+let shown=0,raf=0;
+function drawMeter(v){
+  const p=pctOf(v),c=Math.min(100,p);
+  $("meter").style.background="conic-gradient(var(--p1) 0 "+c+"%,var(--soft) "+c+"% 100%)";
+  $("pct").textContent=Math.floor(p)+"%";
+  $("amt").textContent=yen(v);
+}
+function tween(to){
+  cancelAnimationFrame(raf);
+  const from=shown,t0=performance.now(),dur=900;
+  const step=n=>{
+    const k=Math.min(1,(n-t0)/dur),e=1-Math.pow(1-k,3);
+    shown=from+(to-from)*e;drawMeter(shown);
+    if(k<1)raf=requestAnimationFrame(step);else shown=to;
+  };
+  raf=requestAnimationFrame(step);
+}
+function stage(p){return p>=100?4:p>=67?3:p>=34?2:p>=1?1:0}
+const FACES=["🥚","🐣","🐥","🐔","👑🐔"];
+
+function render(){
+  document.documentElement.lang=lang;
+  document.title=t("title");
+  document.querySelectorAll("[data-i18n]").forEach(n=>n.textContent=t(n.dataset.i18n));
+  document.querySelectorAll("[data-i18n-aria]").forEach(n=>n.setAttribute("aria-label",t(n.dataset.i18nAria)));
+  document.querySelectorAll("[data-i18n-ph]").forEach(n=>n.placeholder=t(n.dataset.i18nPh));
+  $("l-ja").setAttribute("aria-pressed",lang==="ja");
+  $("l-en").setAttribute("aria-pressed",lang==="en");
+  const tt=total(),p=pctOf(tt),rem=S.goal-tt;
+  $("goalText").textContent=t("goalLabel",{v:yen(S.goal)});
+  $("left").textContent=rem>0?t("leftMsg",{v:yen(rem)}):rem===0?t("doneMsg"):t("overMsg",{v:yen(-rem)});
+  $("meter").classList.toggle("done",tt>=S.goal);
+  $("meter").setAttribute("aria-label",t("meterAria",{p:Math.floor(p),a:yen(tt)}));
+  const st=stage(p);
+  $("petFace").textContent=FACES[st];$("petName").textContent=t("p"+st+"n");$("petMsg").textContent=t("p"+st+"m");
+  // badges
+  const bs=badgeState();
+  $("badges").innerHTML=BADGES.map(b=>{
+    const on=S.badges.includes(b.id)||bs[b.id];
+    return '<div class="badge'+(on?"":" lock")+'" data-demo="badge-'+b.id+'"><span class="e" aria-hidden="true">'+(on?b.e:"🔒")+'</span><div><b>'+esc(t("b_"+b.id))+'</b><span>'+esc(t("b_"+b.id+"D"))+'</span></div></div>';
+  }).join("");
+  // list
+  $("countNum").textContent=S.entries.length;
+  const sorted=[...S.entries].sort((a,b)=>b.day-a.day||b.id-a.id);
+  $("list").innerHTML=sorted.length?sorted.map(e=>{
+    const c=CATS.find(x=>x.id===e.cat)||CATS[3];
+    const memo=e.mk?t(e.mk):(e.memo||t("noMemo"));
+    return '<li><span class="ic" aria-hidden="true">'+c.e+'</span><div class="tx"><b>'+esc(memo)+'</b><small>'+esc(t("cat_"+c.id))+' ・ '+(now.getMonth()+1)+'/'+e.day+'</small></div><span class="v">+'+yen(e.amount)+'</span><button type="button" class="del" data-id="'+e.id+'" data-demo="delete-'+e.id+'" aria-label="'+esc(t("delAria"))+'" title="'+esc(t("del"))+'">✕</button></li>';
+  }).join(""):'<li class="empty" style="display:block">'+esc(t("empty"))+'</li>';
+  // sheet categories
+  $("cats").innerHTML=CATS.map(c=>'<button type="button" class="chip" data-cat="'+c.id+'" data-demo="cat-'+c.id+'" aria-pressed="'+(c.id===selCat)+'">'+c.e+" "+esc(t("cat_"+c.id))+'</button>').join("");
+}
+let selCat="hand";
+
+function toast(m){const el=$("toast");el.textContent=m;el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("show"),2600)}
+
+/* confetti */
+const cv=$("fx"),cx=cv.getContext("2d");let parts=[],fxOn=false;
+function sizeFx(){cv.width=innerWidth;cv.height=innerHeight}
+addEventListener("resize",sizeFx);sizeFx();
+function confetti(n){
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches)return;
+  const cols=["#a855f7","#f59e0b","#ec4899","#22c55e","#3b82f6","#fde68a"];
+  for(let i=0;i<n;i++)parts.push({x:innerWidth/2+(Math.random()-.5)*120,y:innerHeight*.55,vx:(Math.random()-.5)*14,vy:-Math.random()*14-4,s:5+Math.random()*6,r:Math.random()*6,vr:(Math.random()-.5)*.4,c:cols[i%cols.length],l:120+Math.random()*60});
+  if(!fxOn){fxOn=true;requestAnimationFrame(loop)}
+}
+function loop(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts.forEach(q=>{q.x+=q.vx;q.y+=q.vy;q.vy+=.4;q.vx*=.99;q.r+=q.vr;q.l--;
+    cx.save();cx.translate(q.x,q.y);cx.rotate(q.r);cx.fillStyle=q.c;cx.globalAlpha=Math.min(1,q.l/40);cx.fillRect(-q.s/2,-q.s/4,q.s,q.s/2);cx.restore()});
+  parts=parts.filter(q=>q.l>0&&q.y<cv.height+20);
+  if(parts.length)requestAnimationFrame(loop);else{fxOn=false;cx.clearRect(0,0,cv.width,cv.height)}
+}
+
+/* sheet */
+let lastFocus=null;
+function openSheet(){lastFocus=document.activeElement;$("err").textContent="";$("amtIn").value="";$("memoIn").value="";render();$("back").classList.add("open");setTimeout(()=>$("amtIn").focus(),30)}
+function closeSheet(){$("back").classList.remove("open");if(lastFocus)lastFocus.focus()}
+$("addBtn").onclick=openSheet;
+$("cancel").onclick=closeSheet;
+$("back").addEventListener("click",e=>{if(e.target===$("back"))closeSheet()});
+addEventListener("keydown",e=>{if(e.key==="Escape"&&$("back").classList.contains("open"))closeSheet()});
+$("cats").addEventListener("click",e=>{const b=e.target.closest("[data-cat]");if(!b)return;selCat=b.dataset.cat;
+  $("cats").querySelectorAll("[data-cat]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.cat===selCat))});
+document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{$("amtIn").value=(parseInt($("amtIn").value)||0)+parseInt(b.dataset.q);$("err").textContent=""});
+$("save").onclick=()=>{
+  const v=Math.floor(Number($("amtIn").value));
+  if(!(v>=1)){$("err").textContent=t("errAmt");$("amtIn").focus();return}
+  const before=total(),wasGoal=before>=S.goal;
+  S.entries.push({id:S.nid++,cat:selCat,amount:v,memo:$("memoIn").value.trim(),day:now.getDate()});
+  const bs=badgeState(),fresh=BADGES.filter(b=>bs[b.id]&&!S.badges.includes(b.id));
+  fresh.forEach(b=>S.badges.push(b.id));
+  save();closeSheet();render();tween(total());
+  const reached=!wasGoal&&total()>=S.goal;
+  confetti(reached?220:50);
+  if(reached)toast(t("goalReached"));
+  else if(fresh.length)toast(t("earned",{n:t("b_"+fresh[0].id)}));
+  else toast(t("added",{v:yen(v)}));
+};
+/* goal */
+$("goalToggle").onclick=()=>{const o=$("goalEdit").classList.toggle("open");$("goalToggle").setAttribute("aria-expanded",o);if(o){$("goalInput").value=S.goal;$("goalInput").focus()}};
+$("goalSave").onclick=()=>{
+  const v=Math.floor(Number($("goalInput").value));
+  if(!(v>=100)){toast(t("errGoal"));return}
+  S.goal=v;save();render();tween(total());
+  $("goalEdit").classList.remove("open");$("goalToggle").setAttribute("aria-expanded","false");
+  toast(t("goalSet",{v:yen(v)}));
+};
+/* list actions */
+$("list").addEventListener("click",e=>{const b=e.target.closest(".del");if(!b)return;
+  S.entries=S.entries.filter(x=>x.id!==Number(b.dataset.id));save();render();tween(total());toast(t("deleted"))});
+$("resetBtn").onclick=()=>{S=sample();save();render();tween(total());toast(t("reset"))};
+/* lang */
+function setLang(l){lang=l;try{localStorage.setItem("lang",l)}catch(e){}render()}
+$("l-ja").onclick=()=>setLang("ja");
+$("l-en").onclick=()=>setLang("en");
+
+render();tween(total());save();
+</script>
+</body>
+</html>

@@ -1,2 +1,19 @@
 # my-idea-1010
-趣味の収入を月の目標に向けてゲーム感覚で貯めるアプリ
+
+
+
+- ▶ **Try it:** https://nakayamachamamk2.github.io/my-idea-1010/
+
+## About
+
+See the app and [IDEA.md](IDEA.md) (the idea log, in Japanese).
+
+## How it was made
+
+Built by shaping the idea together with AI (Claude) and publishing the AI-written code.
+The full conversation is in [IDEA.md](IDEA.md) (Japanese).
+
+## Files
+
+- `index.html` — the app (a single self-contained file)
+- `IDEA.md` — the idea log
