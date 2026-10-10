@@ -3,6 +3,7 @@
 
 
 - ▶ **Try it:** https://nakayamachamamk2.github.io/my-idea-1010/
+- 🎬 **Demo video:** https://nakayamachamamk2.github.io/my-idea-1010/demo.mp4
 
 ## About
 
